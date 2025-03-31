@@ -21,16 +21,23 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 #     logging.info(f"Raw Message Data: {raw_data}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi! This is a test message!")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Hi! This bot apply a mask to your video. The upload limit is 20 MB for now.")
 
 # Video handler
 async def handle_video(update: Update, context: CallbackContext) -> None:
     # raw_data = update.to_dict()  # Get raw message data
     # logging.info(f"Raw Message Data from handle_video: {raw_data}")
+    
+    video = update.message.video
 
-    video_id = update.message.video.file_id
+    # Check if file size exceeds limit
+    file_size_mb = video.file_size / (1024 * 1024)  # Convert to MB
+    if file_size_mb > 20:
+        await update.message.reply_text("The video is too large (max 20 MB).")
+        return
+    
     # logging.info(f"video_id: {video_id}")
-    video_file = await context.bot.get_file(video_id)
+    video_file = await context.bot.get_file(video.file_id)
     await video_file.download_to_drive(VIDEO_PATH)
     await update.message.reply_text("Video received! Processing...")
 
