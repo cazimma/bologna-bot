@@ -11,6 +11,7 @@ from pathlib import Path
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 INPUT_PATH = f"./videos/received_{timestamp}.mp4"
 PREPROCESSED_PATH = f"./videos/preprocessed_{timestamp}.mp4"
+FINAL_PATH = f"./videos/final_{timestamp}.mp4"
 MASK_PATH = "./videos/mask/mask.mov"
 
 # Enable logging
@@ -47,10 +48,14 @@ async def handle_video(update: Update, context: CallbackContext) -> None:
     await video_file.download_to_drive(INPUT_PATH)
     await update.message.reply_text("Video received! Processing...")
 
+    script1 = 'ffmpeg -i 20250331_113436.mp4 -filter_complex "scale=720:-1[inter];[inter]crop=720:1280" test-output.mp4'
+    script2 = 'ffmpeg -i scaled.mp4 -i mask.mov -filter_complex "[0:v][1:v]overlay[masked];[0:a]volume=volume=0.2[a_quiet];[a_quiet][1:a]amix[a_final]" -t 10 -map "[masked]" -map "[a_final]" result.mp4'
+    
     # Execute ffmpeg script
     try:
-        subprocess.run(["ffmpeg", "-i", INPUT_PATH, "-vf", "scale=480:854", PREPROCESSED_PATH], check=True)
-        await context.bot.send_document(chat_id=update.effective_chat.id, document=open(PREPROCESSED_PATH, 'rb'))
+        subprocess.run(["ffmpeg", "-i", INPUT_PATH, "-filter_complex", "scale=720:-1[inter];[inter]crop=720:1280", PREPROCESSED_PATH], check=True)
+        subprocess.run(["ffmpeg", "-i", PREPROCESSED_PATH, "-i", MASK_PATH, "-filter_complex", "[0:v][1:v]overlay[masked];[0:a]volume=volume=0.2[a_quiet];[a_quiet][1:a]amix[a_final]", "-t", "10", "-map", "[masked]", "-map", "[a_final]", FINAL_PATH], check=True)
+        await context.bot.send_document(chat_id=update.effective_chat.id, document=open(FINAL_PATH, 'rb'))
     except subprocess.CalledProcessError:
         await update.message.reply_text("Processing failed.")
     finally:
