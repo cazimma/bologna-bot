@@ -47,9 +47,6 @@ async def handle_video(update: Update, context: CallbackContext) -> None:
     video_file = await context.bot.get_file(video.file_id)
     await video_file.download_to_drive(INPUT_PATH)
     await update.message.reply_text("Video received! Processing...")
-
-    script1 = 'ffmpeg -i 20250331_113436.mp4 -filter_complex "scale=720:-1[inter];[inter]crop=720:1280" test-output.mp4'
-    script2 = 'ffmpeg -i scaled.mp4 -i mask.mov -filter_complex "[0:v][1:v]overlay[masked];[0:a]volume=volume=0.2[a_quiet];[a_quiet][1:a]amix[a_final]" -t 10 -map "[masked]" -map "[a_final]" result.mp4'
     
     # Execute ffmpeg script
     try:
@@ -62,7 +59,9 @@ async def handle_video(update: Update, context: CallbackContext) -> None:
         os.remove(INPUT_PATH)
         if os.path.exists(PREPROCESSED_PATH):
             os.remove(PREPROCESSED_PATH)
-
+        if os.path.exists(FINAL_PATH):
+            os.remove(FINAL_PATH)
+            
 if __name__ == '__main__':
     token = Path('token.txt').read_text()
     application = ApplicationBuilder().token(token).build()
